@@ -16,11 +16,33 @@ describe('schedule generation', () => {
     }
   })
 
-  it('rejects a remaining duration with no valid combination', () => {
+  it('splits a short work window into focus intervals without breaks', () => {
     const result = generateSchedule(30, DEFAULT_SETTINGS)
-    expect(result.success).toBe(false)
-    expect(result.minimumTotal).toBe(20)
-    expect(result.maximumTotal).toBe(25)
+    expect(result.success).toBe(true)
+    expect(result.sessionCount).toBe(2)
+    expect(result.totalMinutes).toBe(30)
+    expect(result.schedule).toEqual([
+      { type: 'focus', duration: 15 },
+      { type: 'focus', duration: 15 },
+    ])
+  })
+
+  it('uses the 21 minutes before the morning workday ends as focus', () => {
+    const result = generateSchedule(21, DEFAULT_SETTINGS)
+    expect(result.success).toBe(true)
+    expect(result.totalMinutes).toBe(21)
+    expect(result.schedule).toEqual([{ type: 'focus', duration: 21 }])
+  })
+
+  it('keeps a one-hour work window as focus intervals without a long break', () => {
+    const result = generateSchedule(71, DEFAULT_SETTINGS)
+    expect(result.success).toBe(true)
+    expect(result.totalMinutes).toBe(71)
+    expect(result.schedule.reduce((sum, interval) => sum + interval.duration, 0)).toBe(71)
+    expect(result.schedule.every((interval) => interval.type === 'focus')).toBe(true)
+    expect(result.schedule).toHaveLength(3)
+    expect(result.schedule.every((interval) => interval.duration <= DEFAULT_SETTINGS.focusMax)).toBe(true)
+    expect(result.schedule.at(-1).type).toBe('focus')
   })
 
   it('covers complete morning and afternoon work sessions', () => {

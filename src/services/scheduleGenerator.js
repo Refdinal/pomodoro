@@ -3,7 +3,12 @@ export function generateSchedule(remainingMinutes, settings = {}, random = Math.
   const focusMax = Number(settings.focusMax ?? 25)
   const breakMin = Number(settings.breakMin ?? 6)
   const breakMax = Number(settings.breakMax ?? 7)
+  if (!Number.isInteger(remainingMinutes) || remainingMinutes < 1) {
+    return { success: false, message: 'Sisa waktu harus minimal satu menit.', sessionCount: 0, minimumTotal: 0, maximumTotal: 0 }
+  }
+
   const sessionCount = Math.ceil(remainingMinutes / 30)
+  const breakCount = Math.max(0, sessionCount - 1)
   const slots = [
     ...Array.from({ length: sessionCount }, (_, index) => ({ type: 'focus', index, min: focusMin, max: focusMax, duration: focusMin })),
     ...Array.from({ length: Math.max(0, sessionCount - 1) }, (_, index) => ({ type: 'break', index, min: breakMin, max: breakMax, duration: breakMin })),
@@ -11,8 +16,32 @@ export function generateSchedule(remainingMinutes, settings = {}, random = Math.
   const minimumTotal = slots.reduce((sum, slot) => sum + slot.min, 0)
   const maximumTotal = slots.reduce((sum, slot) => sum + slot.max, 0)
 
-  if (!Number.isInteger(remainingMinutes) || sessionCount < 1 || remainingMinutes < minimumTotal || remainingMinutes > maximumTotal) {
-    return { success: false, message: 'Tidak ada kombinasi durasi yang valid.', sessionCount, minimumTotal, maximumTotal }
+  if (sessionCount < 1) {
+    return { success: false, message: 'Sisa waktu harus minimal satu menit.', sessionCount, minimumTotal, maximumTotal }
+  }
+
+  if (remainingMinutes < minimumTotal) {
+    // Preserve the focus/break cycle count but remove breaks to fit a short window.
+    const focusCount = Math.max(1, Math.ceil(remainingMinutes / focusMax))
+    const baseDuration = Math.floor(remainingMinutes / focusCount)
+    const extraMinutes = remainingMinutes % focusCount
+    const schedule = Array.from({ length: focusCount }, (_, index) => ({
+      type: 'focus',
+      duration: baseDuration + (index < extraMinutes ? 1 : 0),
+    }))
+    return { success: true, sessionCount: focusCount, totalMinutes: remainingMinutes, schedule, minimumTotal: remainingMinutes, maximumTotal: remainingMinutes }
+  }
+
+  if (remainingMinutes > maximumTotal) {
+    // Add focus-only intervals for unusually long windows so every minute is used.
+    const focusCount = Math.ceil((remainingMinutes - maximumTotal) / focusMax)
+    const baseDuration = Math.floor(remainingMinutes / (sessionCount + focusCount))
+    const extraMinutes = remainingMinutes % (sessionCount + focusCount)
+    const focusSchedule = Array.from({ length: sessionCount + focusCount }, (_, index) => ({
+      type: 'focus',
+      duration: baseDuration + (index < extraMinutes ? 1 : 0),
+    }))
+    return { success: true, sessionCount: focusSchedule.length, totalMinutes: remainingMinutes, schedule: focusSchedule, minimumTotal: remainingMinutes, maximumTotal: remainingMinutes }
   }
 
   let extra = remainingMinutes - minimumTotal

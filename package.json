@@ -37,6 +37,6 @@
     "files": ["dist/**/*", "electron/**/*", "package.json"],
     "directories": { "buildResources": "build", "output": "release" },
     "win": { "target": "nsis", "signAndEditExecutable": false },
-    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true }
+    "nsis": { "oneClick": false, "perMachine": true, "allowToChangeInstallationDirectory": true }
   }
 }

@@ -4,9 +4,20 @@ Workday Pomodoro adalah aplikasi timer Pomodoro desktop untuk Windows. Aplikasi 
 
 ## Instalasi
 
-1. Unduh `Workday-Pomodoro-Setup-1.0.0.exe` dari halaman rilis aplikasi.
-2. Buka file installer dan ikuti petunjuknya. Kamu dapat memilih lokasi instalasi.
+1. Unduh **`Workday-Pomodoro-Setup-1.0.0.exe`** dari halaman rilis aplikasi. Ini adalah installer yang perlu dijalankan.
+2. Klik kanan file installer dan pilih **Run as administrator / Jalankan sebagai administrator**. Setujui dialog Windows jika muncul, lalu ikuti petunjuk instalasi. Kamu dapat memilih lokasi instalasi.
 3. Jalankan **Workday Pomodoro** dari Start Menu atau shortcut desktop.
+
+### File di folder `release/`
+
+Jika mengunduh dari halaman rilis, pilih hanya file installer berikut:
+
+- **`Workday-Pomodoro-Setup-1.0.0.exe`** — installer untuk pengguna. Jalankan file ini untuk memasang aplikasi.
+- `Workday-Pomodoro-Setup-1.0.0.exe.blockmap` — file pendamping untuk pembaruan otomatis/distribusi rilis; bukan aplikasi dan tidak perlu dibuka.
+- `win-unpacked/` — folder keluaran build yang berisi aplikasi dan file runtime. Ini untuk pengujian atau pengembangan, bukan installer yang biasa dibagikan kepada pengguna.
+- `builder-debug.yml` — informasi debug dari proses build; tidak perlu dijalankan.
+
+Jika terdapat beberapa file installer dengan nama mirip, gunakan file dengan nama **`Workday-Pomodoro-Setup-<versi>.exe`** yang sesuai versi rilis. Abaikan file `.blockmap` dan folder `win-unpacked`.
 
 Aplikasi ini mendukung Windows 10 dan Windows 11. Jika Windows menampilkan peringatan karena penerbit aplikasi belum memiliki tanda tangan digital, pastikan installer berasal dari sumber rilis tepercaya sebelum melanjutkan.
 

@@ -1,48 +1,58 @@
 # Workday Pomodoro
 
-Aplikasi Pomodoro desktop Windows yang menyesuaikan interval fokus dan istirahat dengan sisa waktu jam kerja. Dibangun menggunakan Electron, React, Vite, dan Tailwind CSS.
+Workday Pomodoro adalah aplikasi timer Pomodoro desktop untuk Windows. Aplikasi ini membagi sisa jam kerja menjadi sesi fokus dan istirahat, lalu menampilkan pengingat melalui notifikasi desktop dan system tray.
 
-## Fitur
+## Instalasi
 
-- Jadwal kerja lokal pagi dan siang yang dapat diubah.
-- Generator sesi fokus/istirahat dengan validasi total durasi.
-- Timer tetap sinkron setelah komputer tidur atau aplikasi disembunyikan.
-- System tray, notifikasi desktop, dan overlay istirahat transparan yang dapat dipindahkan.
-- Quick test mode untuk mencoba pergantian enam tahap berdurasi 10 detik.
-- Pengaturan dan sesi disimpan secara lokal.
+1. Unduh `Workday-Pomodoro-Setup-1.0.0.exe` dari halaman rilis aplikasi.
+2. Buka file installer dan ikuti petunjuknya. Kamu dapat memilih lokasi instalasi.
+3. Jalankan **Workday Pomodoro** dari Start Menu atau shortcut desktop.
 
-## Persyaratan
+Aplikasi ini mendukung Windows 10 dan Windows 11. Jika Windows menampilkan peringatan karena penerbit aplikasi belum memiliki tanda tangan digital, pastikan installer berasal dari sumber rilis tepercaya sebelum melanjutkan.
 
-- Windows 10/11
-- Node.js 20 atau lebih baru dan npm
+## Menggunakan timer
 
-## Instalasi dan development
+1. Buka aplikasi saat berada di dalam jam kerja yang aktif.
+2. Tekan **Start focus** untuk memulai sesi. Timer akan mengatur interval fokus dan istirahat berdasarkan sisa waktu kerja.
+3. Saat interval berakhir, aplikasi menampilkan notifikasi. Ketika waktunya istirahat, overlay timer dapat tampil di atas jendela lain.
+4. Gunakan **Pause** untuk menjeda timer, **Resume** untuk melanjutkan, atau **Stop** untuk mengakhiri sesi.
+
+Timer mengikuti jadwal kerja yang dikonfigurasi. Sesi berhenti pada akhir jam kerja, dan hitung mundur tetap sinkron setelah komputer tidur atau aplikasi disembunyikan.
+
+## System tray
+
+Saat jendela ditutup, aplikasi tetap berjalan di system tray di area notifikasi Windows. Klik kanan ikon Workday Pomodoro untuk membuka aplikasi, masuk ke pengaturan, menjeda atau melanjutkan timer, menghentikan sesi, atau memilih **Exit** untuk menutup aplikasi sepenuhnya.
+
+## Pengaturan
+
+Buka **Settings** dari aplikasi atau menu ikon system tray untuk mengubah:
+
+- Jam kerja pagi dan siang.
+- Durasi minimum dan maksimum interval fokus dan istirahat.
+- Overlay **Always on top** saat istirahat.
+- Notifikasi desktop dan suara pengingat.
+- Perilaku aplikasi saat jendela ditutup.
+
+Pengaturan dan progres sesi disimpan secara lokal di komputer.
+
+## Jam kerja dan zona waktu
+
+Jadwal menggunakan waktu lokal komputer. Pengaturan bawaan adalah **07:30–12:00** dan **13:30–15:30**. Timer hanya dapat dimulai selama salah satu rentang jam kerja tersebut.
+
+## Menjalankan saat pengembangan
+
+Bagian ini ditujukan bagi pengembang yang ingin menjalankan atau membangun aplikasi dari source code. Pastikan Node.js 20 atau lebih baru dan npm telah terpasang, lalu jalankan:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Vite dan Electron akan berjalan bersamaan. Saat menjalankan aplikasi development, tutup proses dengan menu **Exit** dari system tray.
-
-## Pengujian dan build
+Vite dan Electron akan berjalan bersamaan. Untuk membuat installer Windows:
 
 ```bash
 npm test
-npm run build
 npm run dist
 ```
 
-Installer Windows NSIS tersedia di folder `release/` setelah `npm run dist`.
-
-## Rilis portfolio
-
-Setelah build, unggah installer dari `release/` sebagai GitHub Release. Jangan commit folder `node_modules/`, `dist/`, atau `release/`; semuanya dikecualikan oleh `.gitignore`.
-
-## Perilaku
-
-- Jadwal default: 07:30–12:00 dan 13:30–15:30 waktu lokal.
-- Generator membagi setiap menit secara persis dan menolak kombinasi yang berada di luar batas durasi interval.
-- Pengaturan dan progres sesi disimpan lokal menggunakan browser storage Electron.
-- Countdown didasarkan pada timestamp sehingga tetap sinkron setelah komputer sleep.
-- Saat istirahat, overlay timer transparan ditampilkan di atas aplikasi lain.
+Installer NSIS akan tersedia di folder `release/`.

@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('desktop', {
   showWindow: () => ipcRenderer.invoke('window:show'),
   notify: (notification) => ipcRenderer.invoke('notification:show', notification),
   getVersion: () => ipcRenderer.invoke('app:version'),
+  setCloseToTray: (enabled) => ipcRenderer.invoke('app:set-close-to-tray', enabled),
   onTrayAction: (callback) => {
     const listener = (_event, action) => callback(action)
     ipcRenderer.on('tray-action', listener)

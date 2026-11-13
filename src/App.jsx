@@ -49,7 +49,10 @@ function App() {
     return () => window.clearInterval(interval)
   }, [])
 
-  useEffect(() => { localStorage.setItem(STORAGE_SETTINGS, JSON.stringify(settings)) }, [settings])
+  useEffect(() => {
+    localStorage.setItem(STORAGE_SETTINGS, JSON.stringify(settings))
+    window.desktop?.setCloseToTray(settings.closeToTray)
+  }, [settings])
   useEffect(() => {
     if (session) localStorage.setItem(STORAGE_TIMER, JSON.stringify(session))
     else localStorage.removeItem(STORAGE_TIMER)

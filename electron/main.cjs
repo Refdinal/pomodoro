@@ -5,6 +5,18 @@ let windowRef
 let breakWindowRef
 let tray
 let isQuitting = false
+let closeToTray = true
+
+function quitApplication() {
+  isQuitting = true
+  if (breakWindowRef && !breakWindowRef.isDestroyed()) breakWindowRef.destroy()
+  if (windowRef && !windowRef.isDestroyed()) windowRef.destroy()
+  if (tray) {
+    tray.destroy()
+    tray = null
+  }
+  app.quit()
+}
 
 function createWindow() {
   windowRef = new BrowserWindow({
@@ -44,10 +56,12 @@ function createWindow() {
     console.error(`Renderer failed to load (${code}): ${description} — ${url}`)
   })
   windowRef.on('close', (event) => {
-    if (!isQuitting) {
+    if (!isQuitting && closeToTray) {
       event.preventDefault()
       windowRef.hide()
       windowRef.setSkipTaskbar(true)
+    } else if (!isQuitting) {
+      quitApplication()
     }
   })
 }
@@ -161,7 +175,7 @@ function createTray() {
     { label: 'Pause', click: () => windowRef?.webContents.send('tray-action', 'pause') },
     { label: 'Stop Session', click: () => windowRef?.webContents.send('tray-action', 'stop') },
     { type: 'separator' },
-    { label: 'Exit', click: () => { isQuitting = true; app.quit() } },
+    { label: 'Exit', click: quitApplication },
   ]))
   tray.on('double-click', showWindow)
 }
@@ -179,7 +193,14 @@ app.whenReady().then(() => {
   powerMonitor.on('resume', () => windowRef?.webContents.send('system-resumed'))
 })
 
-app.on('before-quit', () => { isQuitting = true })
+app.on('before-quit', () => {
+  isQuitting = true
+  if (breakWindowRef && !breakWindowRef.isDestroyed()) breakWindowRef.destroy()
+  if (tray) {
+    tray.destroy()
+    tray = null
+  }
+})
 app.on('window-all-closed', (event) => event.preventDefault())
 app.on('activate', showWindow)
 
@@ -217,3 +238,6 @@ ipcMain.handle('notification:show', (_event, { title, body }) => {
   if (Notification.isSupported()) new Notification({ title, body }).show()
 })
 ipcMain.handle('app:version', () => app.getVersion())
+ipcMain.handle('app:set-close-to-tray', (_event, enabled) => {
+  closeToTray = Boolean(enabled)
+})

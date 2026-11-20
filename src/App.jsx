@@ -26,13 +26,13 @@ function App() {
   })
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [testMode, setTestMode] = useState(false)
-  const [overlayMode, setOverlayMode] = useState(false)
+  const [overlayMode, setOverlayMode] = useState(() => Boolean(window.desktop?.isOverlay))
   const overlayDrag = useRef(null)
   const [message, setMessage] = useState('')
   const [appVersion, setAppVersion] = useState('')
   const date = new Date(now)
   const activeWork = getActiveWorkSession(date, settings)
-  const secondsLeft = session?.status === 'running' ? Math.max(0, Math.ceil((session.intervalEnd - now) / 1000)) : session?.remainingSeconds ?? 0
+  const secondsLeft = session?.status === 'running' ? Math.max(0, Math.round((session.intervalEnd - now) / 1000)) : session?.remainingSeconds ?? 0
   const activeInterval = session?.schedule?.[session.intervalIndex]
   const isBreak = activeInterval?.type === 'break' && ['running', 'paused'].includes(session?.status)
   const activeDurationSeconds = activeInterval ? activeInterval.duration * 60 : 0
@@ -45,7 +45,7 @@ function App() {
   const scheduleLabel = useMemo(() => `${settings.morningStart}–${settings.morningEnd}  ·  ${settings.afternoonStart}–${settings.afternoonEnd}`, [settings])
 
   useEffect(() => {
-    const interval = window.setInterval(() => setNow(Date.now()), 500)
+    const interval = window.setInterval(() => setNow(Date.now()), 250)
     return () => window.clearInterval(interval)
   }, [])
 
@@ -54,9 +54,11 @@ function App() {
     window.desktop?.setCloseToTray(settings.closeToTray)
   }, [settings])
   useEffect(() => {
+    if (overlayMode) return
     if (session) localStorage.setItem(STORAGE_TIMER, JSON.stringify(session))
     else localStorage.removeItem(STORAGE_TIMER)
-  }, [session])
+    window.desktop?.syncSession(session)
+  }, [session, overlayMode])
 
   const notify = useCallback((title, body) => {
     if (!settings.desktopNotification) return
@@ -73,9 +75,11 @@ function App() {
       return
     }
     const next = current.schedule[nextIndex]
-    const intervalEnd = Math.min(Date.now() + next.duration * 60000, current.sessionEnd)
-    const updated = { ...current, intervalIndex: nextIndex, intervalStart: Date.now(), intervalEnd, remainingSeconds: next.duration * 60, status: 'running' }
+    const intervalStart = Date.now()
+    const intervalEnd = Math.min(intervalStart + next.duration * 60000, current.sessionEnd)
+    const updated = { ...current, intervalIndex: nextIndex, intervalStart, intervalEnd, remainingSeconds: Math.round((intervalEnd - intervalStart) / 1000), status: 'running' }
     setSession(updated)
+    window.desktop?.syncSession(updated)
     window.desktop?.setBreakMode(next.type === 'break')
     notify(next.type === 'break' ? 'Waktunya istirahat' : 'Istirahat selesai', next.type === 'break' ? 'Ambil jeda sejenak dan segarkan pikiran.' : 'Saatnya kembali fokus.')
     if (next.type === 'break' && settings.soundNotification) { try { new Audio('/notification.wav').play().catch(() => {}) } catch { /* optional sound */ } }
@@ -120,10 +124,11 @@ function App() {
     setMessage('')
     if (settings.desktopNotification && 'Notification' in window && Notification.permission === 'default') Notification.requestPermission()
     const first = result.schedule[0]
+    const intervalEnd = Math.min(start.getTime() + first.duration * 60000, testMode ? start.getTime() + 60 * 1000 : work.end.getTime())
     const newSession = {
       schedule: result.schedule, intervalIndex: 0, status: 'running', intervalStart: start.getTime(),
-      intervalEnd: start.getTime() + first.duration * 60000, sessionEnd: testMode ? start.getTime() + 60 * 1000 : work.end.getTime(),
-      remainingSeconds: first.duration * 60, workName: testMode ? `${work.name} · Uji` : work.name, startedAt: start.getTime(),
+      intervalEnd, sessionEnd: testMode ? start.getTime() + 60 * 1000 : work.end.getTime(),
+      remainingSeconds: Math.round((intervalEnd - start.getTime()) / 1000), workName: testMode ? `${work.name} · Uji` : work.name, startedAt: start.getTime(),
     }
     setSession(newSession)
     notify('Sesi fokus dimulai', `Timer berjalan sampai ${formatTime(work.end)}.`)
@@ -131,7 +136,7 @@ function App() {
   }
 
   function pauseTimer() {
-    setSession((current) => current?.status === 'running' ? { ...current, status: 'paused', remainingSeconds: Math.max(0, Math.ceil((current.intervalEnd - Date.now()) / 1000)) } : current)
+    setSession((current) => current?.status === 'running' ? { ...current, status: 'paused', remainingSeconds: Math.max(0, Math.round((current.intervalEnd - Date.now()) / 1000)) } : current)
     window.desktop?.setBreakMode(false)
   }
 
@@ -143,10 +148,13 @@ function App() {
         const nextIndex = current.intervalIndex + 1
         if (nextIndex >= current.schedule.length) return null
         const next = current.schedule[nextIndex]
-        const intervalEnd = Math.min(Date.now() + next.duration * 60000, current.sessionEnd)
+        const intervalStart = Date.now()
+        const intervalEnd = Math.min(intervalStart + next.duration * 60000, current.sessionEnd)
+        const updated = { ...current, intervalIndex: nextIndex, intervalStart, intervalEnd, remainingSeconds: Math.round((intervalEnd - intervalStart) / 1000), status: 'running' }
+        window.desktop?.syncSession(updated)
         window.desktop?.setBreakMode(next.type === 'break' && settings.alwaysOnTop)
         notify(next.type === 'break' ? 'Waktunya istirahat' : 'Istirahat selesai', next.type === 'break' ? 'Ambil jeda sejenak dan segarkan pikiran.' : 'Saatnya kembali fokus.')
-        return { ...current, intervalIndex: nextIndex, intervalStart: Date.now(), intervalEnd, remainingSeconds: next.duration * 60, status: 'running' }
+        return updated
       }
       const end = Date.now() + current.remainingSeconds * 1000
       return { ...current, status: 'running', intervalStart: Date.now(), intervalEnd: Math.min(end, current.sessionEnd) }
@@ -176,10 +184,11 @@ function App() {
     })
     const unsubscribeResume = window.desktop?.onSystemResumed(() => setNow(Date.now()))
     const unsubscribeOverlay = window.desktop?.onOverlayMode(setOverlayMode)
+    const unsubscribeSessionSync = window.desktop?.onSessionSync((synced) => setSession(synced))
     const unsubscribeSettings = window.desktop?.onOpenSettings(() => setSettingsOpen(true))
     if (window.desktop?.isOverlay) setOverlayMode(true)
     window.desktop?.getVersion().then(setAppVersion).catch(() => {})
-    return () => { unsubscribeTray?.(); unsubscribeResume?.(); unsubscribeOverlay?.(); unsubscribeSettings?.() }
+    return () => { unsubscribeTray?.(); unsubscribeResume?.(); unsubscribeOverlay?.(); unsubscribeSettings?.(); unsubscribeSessionSync?.() }
   })
 
   const updateSetting = (key, value) => setSettings((current) => ({ ...current, [key]: value }))
@@ -208,6 +217,7 @@ function App() {
         <button className="overlay-close" onClick={() => window.desktop?.closeOverlay()} aria-label="Sembunyikan timer istirahat"><X size={14} /></button>
       </section> : <>
       <section className="simple-timer-card">
+        <button className="icon-button simple-settings-button" onClick={() => setSettingsOpen(true)} aria-label="Buka pengaturan"><Settings2 size={17} /></button>
         <div className="simple-status"><span className={`mode-dot ${isBreak ? 'break-dot' : ''}`} />{session ? (session.status === 'paused' ? 'PAUSED' : isBreak ? 'BREAK' : 'FOCUS SESSION') : activeWork ? `WORK SESSION · ${activeWork.name.toUpperCase()}` : 'OUTSIDE WORK HOURS'}</div>
         <div className="simple-clock">{session ? formatDuration(secondsLeft) : formatTime(date)}</div>
         <div className="simple-detail">{session ? `${activeInterval?.type === 'break' ? 'Interval' : 'Interval'} ${session.intervalIndex + 1} of ${session.schedule.length} · ends ${finishTime}` : `Work hours ${scheduleLabel}`}</div>

@@ -6,6 +6,7 @@ let breakWindowRef
 let tray
 let isQuitting = false
 let closeToTray = true
+let latestSession = null
 
 function quitApplication() {
   isQuitting = true
@@ -103,6 +104,7 @@ function createBreakWindow() {
   breakWindowRef.webContents.once('did-finish-load', () => {
     if (!breakWindowRef || breakWindowRef.isDestroyed()) return
     breakWindowRef.webContents.send('overlay-mode', true)
+    if (latestSession !== null) breakWindowRef.webContents.send('session-sync', latestSession)
     breakWindowRef.__rendererReady = true
     if (breakWindowRef.__showOnReady) {
       breakWindowRef.__showOnReady = false
@@ -210,10 +212,17 @@ app.on('activate', showWindow)
     hideMainWindow()
     const overlay = createBreakWindow()
     if (!overlay.__rendererReady || overlay.webContents.isLoadingMainFrame()) overlay.__showOnReady = true
-    else overlay.showInactive()
+    else {
+      if (latestSession !== null) overlay.webContents.send('session-sync', latestSession)
+      overlay.showInactive()
+    }
   } else {
     if (breakWindowRef && !breakWindowRef.isDestroyed()) breakWindowRef.hide()
   }
+})
+ipcMain.on('session:sync', (_event, session) => {
+  latestSession = session
+  if (breakWindowRef && !breakWindowRef.isDestroyed()) breakWindowRef.webContents.send('session-sync', session)
 })
 ipcMain.handle('window:move-overlay', (_event, { deltaX, deltaY }) => {
   if (!breakWindowRef || breakWindowRef.isDestroyed()) return

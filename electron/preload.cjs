@@ -25,6 +25,12 @@ contextBridge.exposeInMainWorld('desktop', {
     ipcRenderer.on('overlay-mode', listener)
     return () => ipcRenderer.removeListener('overlay-mode', listener)
   },
+  syncSession: (session) => ipcRenderer.send('session:sync', session),
+  onSessionSync: (callback) => {
+    const listener = (_event, session) => callback(session)
+    ipcRenderer.on('session-sync', listener)
+    return () => ipcRenderer.removeListener('session-sync', listener)
+  },
   onOpenSettings: (callback) => {
     ipcRenderer.on('open-settings', callback)
     return () => ipcRenderer.removeListener('open-settings', callback)

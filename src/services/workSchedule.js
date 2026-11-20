@@ -1,6 +1,6 @@
 export const DEFAULT_SETTINGS = {
   morningStart: '07:30', morningEnd: '12:00', afternoonStart: '13:30', afternoonEnd: '15:30',
-  focusMin: 20, focusMax: 25, breakMin: 6, breakMax: 7,
+  focusMin: 15, focusMax: 25, breakMin: 5, breakMax: 8,
   alwaysOnTop: true, desktopNotification: true, soundNotification: true, closeToTray: true,
 }
 
